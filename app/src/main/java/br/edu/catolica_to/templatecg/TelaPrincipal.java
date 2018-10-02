@@ -1,5 +1,9 @@
 package br.edu.catolica_to.templatecg;
 
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -7,6 +11,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -17,237 +22,196 @@ import java.util.Random;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import static java.lang.Math.random;
+
 //ESTA CLASSE IMPLEMENTA OS METODOS NECESSARIOS PARA
 //UTILIZAR A BIBLIOTECA OPENGL NO DESENHO GRAFICO
 //QUE SERA APRESENTADO NA TELA PELA SUPERFICIE DE DESENHO
 class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
 
 
-    //vetor de coordenadas
-    FloatBuffer buffer1;
+    private GL10 gl;
+    private Triangulo tri;
+    private Quadrado qua;
+    private Paralelogramo para;
+    private float esquerda = 0;
+    private float direita = 0;
+    private int posX = 0;
+    private int posY = 0;
+    private static int larguraX;
+    private static int alturaY;
 
-    //OBJETO DO OPENGL PASSADO PARA OS OBJETO GEOMETRICOS
-    GL10 gl;
+    private Buffer buffer;
 
-    float largura = 0;
-    float altura = 0;
+    private float direcaoX = 1;
+    private float direcaoY = 1;
 
-    //TAMANHOS PEQUENOS (ESTATICOS)
-    int tamanhoEstatico = 100;
+    //objetos usados para realizar o arrasta e solta
+    private Geometria objMove = null;
+    private ArrayList<Geometria> vetorGeo = new ArrayList();
+    private float angulo = 0;
 
-    //TRANSLACAO
-    float posX = 0; //VARIAVEL USADA PARA FAZER A TRANSLACAO NO EIXO X
-    float direcaoHorizontal = 1; //VARIAVEL USADA PARA FAZER A TRANSLACAO NO EIXO X
-
-    float posY = 0; //VARIAVEL USADA PARA FAZER A TRANSLACAO NO EIXO Y
-    float direcaoVertical = 1; //VARIAVEL USADA PARA FAZER A TRANSLACAO NO EIXO Y
-
-    //ROTACAO
-    float angulo = 0;
-
-    //LISTA USADA PARA CRIAR OBJETOS DINAMINCAMENTE COM UM CLICK
-    List<Geometria> objetosGeometricos = new ArrayList<>();
-    List<Geometria> objetosGeometricosStatic = new ArrayList<>();
-
-
-
-    //------------------------------------- INICIO METODOS OPENGL --------------------------------------------------------------
-
-
-    //CHAMADO UMA VEZ QUANDO A SUPERFICIE DE DESENHO FOR CRIADA
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        //CONFIGURA A COR DE LIMPEZA DA TELA (RGBA)
-        gl.glClearColor(0.61f, 0.4f, 0.122f, 1); //vermelha
+        gl.glClearColor(0.1f, 0, 0, 1);
     }
 
-
-    //CHAMADO QUANDO A SUPERFICIE DE DESENHO FOR ALTERADA (QUANDO CRIA E QUANDO ROTACIONA A TELA)
+    //É chamado quando a superfície de desenho for alterada.
     @Override
     public void onSurfaceChanged(GL10 gl, int largura, int altura) {
-
-        this.largura = largura;
-        this.altura = altura;
         this.gl = gl;
+        this.alturaY = altura;
+        this.larguraX = largura;
 
-        //IMPRIME A LARGURA E ALTURA NO CONSOLE DO ANDROID STUDIO
-        Log.i("INFO", largura + " " + altura);
+        //CONFIGURACAOES DA VIEW PORT --------------------------------------------------------------
 
-        //CONFIGURANDO A AREA DE COORDENADAS DO PLANO CARTESIANO
-        gl.glMatrixMode(gl.GL_PROJECTION); //APONTANDO O OPENGL PARA A MATRIZ DE PRODUCAO (usada para definir area de rendereizacao)
-        gl.glLoadIdentity(); //SETANDO MATRIZ IDENTIDADE NA MATRIZ DE PRODUCAO
-        gl.glOrthof(0f, largura,
-                0f, altura,
-                -1f, 1f); //DEFININDO O VOLUME DE RENDERIZACAO
-
-        gl.glMatrixMode(GL10.GL_MODELVIEW); //APONTANDO O OPENGL PARA A MATRIZ DE TRANSFORMACOES GEOMETRICAS (tranzacao, rotacao e escala)
-        gl.glLoadIdentity(); //para limpar o lixo de memoria e setar a matriz inicial
-
-//        //DESENHANDO...................................................................................
-//
-        //CONFIGURA A AREA DE VISUALIZAÇÃO NA TELA
+        //Configurando a área de cordenadas do plano cartesiano
+        //MAtriz de projeção
+        gl.glMatrixMode(gl.GL_PROJECTION);
+        gl.glLoadIdentity();
+        //Define o espaço de trabalho.
+        //volume (CUBO 3D) de renderização - Tudo que for configurado dentro desse volume aparece na tela.
+        //Definindo X - Y - Z , LARGURA - ALTURA - PROFUNDIDADE
+        gl.glOrthof(0.0f, largura, 0.0f, altura, -1.0f, 1.0f);
+        //OPENGL aponta para nova matriz (De transformações geométricas)
+        //Translação, Rotação e Escala
+        //Matriz de câmera
+        gl.glMatrixMode(GL10.GL_MODELVIEW);
+        gl.glLoadIdentity();
         gl.glViewport(0, 0, largura, altura);
 
-//        //DEFINE OS VETORES DE COORDENADAS JAVA (QUADRADO)
-//        float[] vetroJava1 = {-largura / 4, -altura / 4,
-//                -largura / 4, altura / 4,
-//                largura / 4, -altura / 4,
-//                largura / 4, altura / 4};
-//
-//        //CONVERTE PARA O VETOR DO OPENGL
-//        buffer1 = criaBuffer(vetroJava1);
-//
-//        //SOLICITA AO OPENGL PERMISSAO PARA USAR O VETOR DE VERTICES
-//        gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
-//
-//        //REGISTRA O VETOR DE COORDENADAS NA OPENGL
-//        gl.glVertexPointer(2, GL10.GL_FLOAT, 0, buffer1);
-//        //FIM DESENHO.........................................
+        //FIM --------------------------------------------------------------------------------------
 
+        //CRIA UM QUADRADO
+        qua = new Quadrado(gl);
+        qua.setCor((float) random(), (float) random(), (float) random(), 1f);
+        qua.setPosX(posX);
+        qua.setPosY(posY);
+
+        float[] co = new float[]{
+                -100, -100,
+                -100, 100,
+                100, -100,
+                100, 100
+        };
+//
+
+        buffer = criaNIOBuffer(co);
 
     }
 
-    private boolean jaListei = false;
+    public static FloatBuffer criaNIOBuffer(float[] coordenadas) {
+        //Aloca a qtd de bytes necessárias para armazenar os dados dos vertices
+        ByteBuffer vetBytes = ByteBuffer.allocateDirect(coordenadas.length * 4);
 
-    //CHAMADO N VEZES POR SEGUNDO PARA DESENHAR NA TELA
-    //QUANTIDADE DE VEZES CHAMADO, DETERMINA O FPS
-    //QUANTO MAIS COISAS HOUVER AQUI DENTRO MENOR A TAXA DE FPS
-    @Override
-    public void onDrawFrame(GL10 gl) {
-
-        //CARREGA A MATRIZ IDENTIDADE
-        gl.glLoadIdentity();
-
-//        //AUMENTA A ROTACAO A CADA CICLO
-//        this.angulo += 2;
-//
-//        //AUMENTA A TRANSLACAO A CADA CICLO
-//        this.posX += direcaoHorizontal * 3.0;
-//        this.posY += direcaoVertical * 3.0;
-//
-//        //COMO SEI QUE O MEU QUADRADO BATEU NA BORDA VERTICAL (TRANSLACAO)
-//        if (posX + tamanhoEstatico >= largura || posX <= 0) {
-//            direcaoHorizontal *= -1;
-//        }
-//        //COMO SEI QUE O MEU QUADRADO BATEU NA BORDA HORIZONTAL (TRANSLACAO)
-//        if (posY + tamanhoEstatico >= altura || posY <= 0) {
-//            direcaoVertical *= -1;
-//        }
-//        //REGISTRO O MOVIMENTO DE TRANSLACAO
-//        gl.glTranslatef(posX, posY, 0);
-//        //REALIZA O MOVIMENTO DE ROTACAO
-//        gl.glRotatef(angulo, 0, 0, 1); //rotacao é a multiplicao do angulo por cada eixo
-//
-
-        //APLICA A COR DE LIMPEZA DE TELA A TODOS O BITS DO BUFER DE COR
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-
-//
-////
-////
-//        //DESENHO A COR DO DESENHO
-//        gl.glColor4f(1, 1, 0, 1); //cor yellow
-//        //DESENHAR INTERPRETANDO OS VERTICES COMO TRIANGULOS (3 VERTICES) INICIANDO NA POSICAO 0 ATE 3 POSICAO
-//        gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4); //a partir da posicao 0 desenha 4 vertices
-
-        synchronized (this) {
-            for (Geometria objGeometrico :
-                    objetosGeometricos) {
-                objGeometrico.desenha();
-            }
-        }
-
-    }
-
-
-    //------------------------------------- FIM METODOS OPENGL --------------------------------------------------------------
-
-
-    //conversor de array de coordenadas java -> array de coordenadas openGL
-    FloatBuffer criaBuffer(float[] coordenadas) {
-        //ALOCA A QTD DE BYTES
-        ByteBuffer vetBytes =
-                ByteBuffer.allocateDirect(coordenadas.length * 4);
-
+        //Usa o sistema de endereçamento de memória
+        //nativo no processador em questão
         vetBytes.order(ByteOrder.nativeOrder());
 
-        //CRIA O FLOAT BUFFER A PARTIR DO BYTEBUF
+        //cria o FloatBuffer a partir do byteBuffer
         FloatBuffer buffer = vetBytes.asFloatBuffer();
-        //limpa eventual lixo na memoria
+
+        //Limpa um eventual lixo de memória
         buffer.clear();
-        //encaspula o array java no objeto float buffer
+
+        //Encapsula o array java no objeto Float Buffer
         buffer.put(coordenadas);
-        //retira sobras da memoria
+
+        //Retira as sobras de memória
         buffer.flip();
-        //retorna o objeto de coordenadas
+
+        //Retorna o objeto de coordenadas
         return buffer;
     }
 
-
-    //OUVINDO AS INTERACOES COM O TOUCHSCREEN
     @Override
-    public boolean onTouch(View v, MotionEvent event) {
+    public void onDrawFrame(GL10 gl) {
 
-        synchronized (this) {
-            if (event.getAction() == event.ACTION_MOVE) {
+        gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
 
-//                for (int i = 0; i < this.objetosGeometricos.size(); i++) {
-//
-//                    if (event.getX() < objetosGeometricos.get(i).getPosX() + tamanhoEstatico &&
-//                            event.getX() > objetosGeometricos.get(i).getPosX()) {
-//                        //SETO AS POSICOES DE X e Y NO DESENHO
-//                        posX = event.getX();
-//                        posY = altura - event.getY();
-//
-//                    }
-//
-//                }
-//
-//
+        //limpa o vetor de cores
+        gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+        //carrega a matriz identidade
+        gl.glLoadIdentity();
+        //realiza o movimento de translação em todos os vertices desenhados
+        gl.glTranslatef(posX, posY, 0);
+        //rotacao é a multiplicao do angulo por cada eixo
+        gl.glRotatef(angulo, 0, 0, 1);
 
+        //almento o angulo de rotacao
+        angulo += 8;
 
+        gl.glColor4f(1, 0, 0.2f, 1);
+        gl.glVertexPointer(2, GL10.GL_FLOAT, 0, buffer);
+        gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
 
+        if (MainActivity.INCLINACAO_X > 2) {
+            Log.i("RENDER", "esquerda : " + MainActivity.INCLINACAO_X);
+            if (posX >= 100) {
+                posX -= 6;
+            }
+        }
+        if (MainActivity.INCLINACAO_X < -2) {
+            Log.i("RENDER", "direita : " + MainActivity.INCLINACAO_X);
+            if (posX + 100 <= larguraX) {
+                posX += 6;
+            }
+        }
+        if (MainActivity.INCLINACAO_Y < 0) {
+            Log.i("RENDER", "ponta baixa : " + MainActivity.INCLINACAO_Y);
+            if (posY + 100 <= alturaY) {
+                posY += 6;
+            }
+        }
+        if (MainActivity.INCLINACAO_Y > 3) {
+            Log.i("RENDER", "ponta pra cima : " + MainActivity.INCLINACAO_Y);
+            if (posY >= 100) {
+                posY -= 6;
+            }
+        }
 
+    }
 
-            } else if (event.getAction() == event.ACTION_UP) {
-                //HOUVE UM TOQUE NA TELA
-                this.posX = event.getX();
-                this.posY = altura - event.getY();
+    //PEGA O OBJ DE LOCALIZADO EM UM LUGAR NA TELA
+    public Geometria getObjeto(int posX, int posY) {
+        int pontoBase = 0;
+        for (int i = 0; i < vetorGeo.size(); i++) {
+            if (posX > vetorGeo.get(i).getPosX() - 100 / 2 && posY > vetorGeo.get(i).getPosY() - 100 / 2) {
+                return vetorGeo.get(i);
+            }
+        }
+        return null;
+    }
 
-                Quadrado q = new Quadrado(gl, this.posX, this.posY, tamanhoEstatico, tamanhoEstatico );
-                q.setCor((float) Math.random(), (float) Math.random(), (float) Math.random(), (float) Math.random());
-                this.objetosGeometricos.add(q);
-
-            } else if (event.getAction() == event.ACTION_DOWN) {
-
-                //HOUVE UM TERMINO DE TOQUE
+    @Override
+    public boolean onTouch(View view, MotionEvent motionEvent) {
+        //AO ARRASTAR
+        if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
+            //altera a translacao
+            posX = (int) motionEvent.getX();
+            posY = alturaY - (int) motionEvent.getY();
+        }
+        //AO CLICAR
+        if (objMove == null) {
+            if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                posX = (int) motionEvent.getX();
+                posY = alturaY - (int) motionEvent.getY();
+                Quadrado qua = new Quadrado(gl);
+                qua.setPosX(posX);
+                qua.setPosY(posY);
+                qua.setCor((float) random(), (float) random(), (float) random(), 1f);
+                //ADICIONA UM QUADRADO AO LIST DE GEOMETRICOS QUE VAI SER DESENHADO NA TELA
+                vetorGeo.add(qua);
 
             }
-            return true; //retorno true para que o arrastar possa ser chamado mais de uma vez
         }
-    }
-}
+        //AO SOLTAR CLICK
+        if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+            posX = (int) motionEvent.getX();
+            posY = alturaY - (int) motionEvent.getY();
 
-public class TelaPrincipal extends AppCompatActivity {
-
-    //CRIA REFERENCIA PARA OBJETO DE DESENHO
-    GLSurfaceView superficieDesenho = null;
-    Renderizador render = null;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        //VALIDA A VAR DE REFERENCIA PARA A SUPERFICIE
-        superficieDesenho = new GLSurfaceView(this);
-
-        //VALIDA A VAR DE REFERENCIA PARA O RENDERIZADOR
-        render = new Renderizador();
-
-        //ASSOCIA A SUPERFICIE DE DESENHO AO REDENDERIZADOR
-        superficieDesenho.setRenderer(render);
-        superficieDesenho.setOnTouchListener(render); //setar o ouvidor do touchcreen
-
-        //PUBLICA A SUPERFICIE DE DESENHO NA TELA DO APP
-        setContentView(superficieDesenho);
+            objMove = this.getObjeto(posX, posY);
+        }
+        return true;
     }
 }
