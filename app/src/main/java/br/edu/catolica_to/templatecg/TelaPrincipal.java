@@ -43,8 +43,8 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
 
     private Buffer buffer;
 
-    private float direcaoX = 1;
-    private float direcaoY = 1;
+//    private float direcaoX = 1;
+//    private float direcaoY = 1;
 
     //objetos usados para realizar o arrasta e solta
     private Geometria objMove = null;
@@ -128,47 +128,55 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
     public void onDrawFrame(GL10 gl) {
 
         gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
-
         //limpa o vetor de cores
         gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
         //carrega a matriz identidade
         gl.glLoadIdentity();
-        //realiza o movimento de translação em todos os vertices desenhados
-        gl.glTranslatef(posX, posY, 0);
-        //rotacao é a multiplicao do angulo por cada eixo
-        gl.glRotatef(angulo, 0, 0, 1);
 
-        //almento o angulo de rotacao
-        angulo += 8;
-
-        gl.glColor4f(1, 0, 0.2f, 1);
+        //----- QUADRADO 1 (principal)---------
+        //TRANSLACAO
+        gl.glTranslatef(posX+40, posY+40, 0);
+        //COR
+        gl.glColor4f(1, 1, 0.2f, 1);
+        //CORDENADAS
         gl.glVertexPointer(2, GL10.GL_FLOAT, 0, buffer);
+        //DESENHA
         gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
 
-        if (MainActivity.INCLINACAO_X > 2) {
-            Log.i("RENDER", "esquerda : " + MainActivity.INCLINACAO_X);
-            if (posX >= 100) {
-                posX -= 6;
-            }
-        }
-        if (MainActivity.INCLINACAO_X < -2) {
-            Log.i("RENDER", "direita : " + MainActivity.INCLINACAO_X);
-            if (posX + 100 <= larguraX) {
-                posX += 6;
-            }
-        }
-        if (MainActivity.INCLINACAO_Y < 0) {
-            Log.i("RENDER", "ponta baixa : " + MainActivity.INCLINACAO_Y);
-            if (posY + 100 <= alturaY) {
-                posY += 6;
-            }
-        }
-        if (MainActivity.INCLINACAO_Y > 3) {
-            Log.i("RENDER", "ponta pra cima : " + MainActivity.INCLINACAO_Y);
-            if (posY >= 100) {
-                posY -= 6;
-            }
-        }
+        //---- EMPLILHA *** QUADRADO 2 (secundario)
+        gl.glPushMatrix();
+            //COR
+            gl.glColor4f(0, 0,1, 1);
+            //FAZENDO RODAS AO REDOR DO QUADRADO PRINCIPAL
+            gl.glRotatef(angulo, 0,0,1);
+            //PRIMEIRO TRANSLADA DEPOIS ROTACIONA (segundo quadrado roda no proprio eixo)
+            gl.glTranslatef(250, 0, 0);
+            gl.glRotatef(angulo, 0, 0, 1.5f); //(ultimo parametro determina a velocidade)
+            //DIMINUI A ESCALA
+            gl.glScalef(0.5f, 0.5f, 0.5f);
+            //DESENHA
+            gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
+
+                //---- EMPLILHA *** QUADRADO 3 (terceiro)
+                gl.glPushMatrix();
+                    //COR
+                    gl.glColor4f(1, 1,1, 1);
+                    //FAZENDO RODAS AO REDOR DO QUADRADO PRINCIPAL
+                    gl.glRotatef(angulo, 0,0,1);
+                    //PRIMEIRO TRANSLADA DEPOIS ROTACIONA (segundo quadrado roda no proprio eixo)
+                    gl.glTranslatef(200, 0, 0);
+                    gl.glRotatef(angulo, 0, 0, 3);
+                    //DIMINUI A ESCALA
+                    gl.glScalef(0.5f, 0.5f, 0.5f);
+                    //DESENHA
+                    gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
+                //DESENPILHA
+                gl.glPopMatrix();
+
+        //DESENPILHA
+        gl.glPopMatrix();
+
+        angulo+=2;
 
     }
 
