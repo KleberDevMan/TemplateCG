@@ -34,8 +34,6 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
     private Triangulo tri;
     private Quadrado qua;
     private Paralelogramo para;
-    private float esquerda = 0;
-    private float direita = 0;
     private int posX = 0;
     private int posY = 0;
     private static int larguraX;
@@ -43,8 +41,7 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
 
     private Buffer buffer;
 
-//    private float direcaoX = 1;
-//    private float direcaoY = 1;
+    boolean aumentandoAngulo = false;
 
     //objetos usados para realizar o arrasta e solta
     private Geometria objMove = null;
@@ -89,12 +86,11 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         qua.setPosY(posY);
 
         float[] co = new float[]{
-                -100, -100,
-                -100, 100,
-                100, -100,
-                100, 100
+                -50, 300,
+                50, 300,
+                -50, 0,
+                50, 0
         };
-//
 
         buffer = criaNIOBuffer(co);
 
@@ -124,6 +120,8 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         return buffer;
     }
 
+
+
     @Override
     public void onDrawFrame(GL10 gl) {
 
@@ -135,9 +133,11 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
 
         //----- QUADRADO 1 (principal)---------
         //TRANSLACAO
-        gl.glTranslatef(posX+40, posY+40, 0);
+        gl.glTranslatef(posX, posY, 0);
+        //ROTACAO
+        gl.glRotatef(angulo, 0,0,1);
         //COR
-        gl.glColor4f(1, 1, 0.2f, 1);
+        gl.glColor4f(1, 0, 0, 1);
         //CORDENADAS
         gl.glVertexPointer(2, GL10.GL_FLOAT, 0, buffer);
         //DESENHA
@@ -146,37 +146,40 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         //---- EMPLILHA *** QUADRADO 2 (secundario)
         gl.glPushMatrix();
             //COR
-            gl.glColor4f(0, 0,1, 1);
-            //FAZENDO RODAS AO REDOR DO QUADRADO PRINCIPAL
+            gl.glColor4f(1, 1,0, 1);
+            //TRANSLACAO
+            gl.glTranslatef(0, 300, 0);
+            //ROTACAO
             gl.glRotatef(angulo, 0,0,1);
-            //PRIMEIRO TRANSLADA DEPOIS ROTACIONA (segundo quadrado roda no proprio eixo)
-            gl.glTranslatef(250, 0, 0);
-            gl.glRotatef(angulo, 0, 0, 1.5f); //(ultimo parametro determina a velocidade)
-            //DIMINUI A ESCALA
-            gl.glScalef(0.5f, 0.5f, 0.5f);
             //DESENHA
             gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
 
                 //---- EMPLILHA *** QUADRADO 3 (terceiro)
                 gl.glPushMatrix();
                     //COR
-                    gl.glColor4f(1, 1,1, 1);
-                    //FAZENDO RODAS AO REDOR DO QUADRADO PRINCIPAL
+                    gl.glColor4f(0, 1,0, 1);
+                    //TRANSLACAO
+                    gl.glTranslatef(0, 300, 0);
+                    //ROTACAO
                     gl.glRotatef(angulo, 0,0,1);
-                    //PRIMEIRO TRANSLADA DEPOIS ROTACIONA (segundo quadrado roda no proprio eixo)
-                    gl.glTranslatef(200, 0, 0);
-                    gl.glRotatef(angulo, 0, 0, 3);
-                    //DIMINUI A ESCALA
-                    gl.glScalef(0.5f, 0.5f, 0.5f);
                     //DESENHA
                     gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
+
                 //DESENPILHA
                 gl.glPopMatrix();
 
         //DESENPILHA
         gl.glPopMatrix();
 
-        angulo+=2;
+        if (angulo > 10)
+            aumentandoAngulo = false;
+        else if (angulo < -10)
+            aumentandoAngulo = true;
+
+        if (aumentandoAngulo)
+            angulo+=0.3;
+        else
+            angulo-=0.3;
 
     }
 
