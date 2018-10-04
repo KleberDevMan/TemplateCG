@@ -43,6 +43,8 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
 
     boolean aumentandoAngulo = false;
 
+
+
     //objetos usados para realizar o arrasta e solta
     private Geometria objMove = null;
     private ArrayList<Geometria> vetorGeo = new ArrayList();
@@ -85,11 +87,12 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         qua.setPosX(posX);
         qua.setPosY(posY);
 
+
         float[] co = new float[]{
-                -50, 300,
-                50, 300,
-                -50, 0,
-                50, 0
+                -10, 150,
+                10, 150,
+                -10, 0,
+                10, 0
         };
 
         buffer = criaNIOBuffer(co);
@@ -121,6 +124,13 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
     }
 
 
+    boolean deuUmMinuto = false;
+    boolean deuUmaHora = false;
+
+    float anguloSegundo = 0;
+    float anguloMinuto = 0;
+    float anguloHora = 0;
+
 
     @Override
     public void onDrawFrame(GL10 gl) {
@@ -131,11 +141,11 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         //carrega a matriz identidade
         gl.glLoadIdentity();
 
-        //----- QUADRADO 1 (principal)---------
+        //----- PONTEIRO 1 - VERMELHO - (Hora) ---------
         //TRANSLACAO
-        gl.glTranslatef(posX, posY, 0);
+        gl.glTranslatef((larguraX/2)+10, alturaY/2, 0);
         //ROTACAO
-        gl.glRotatef(angulo, 0,0,1);
+        gl.glRotatef(anguloHora, 0,0,1);
         //COR
         gl.glColor4f(1, 0, 0, 1);
         //CORDENADAS
@@ -143,25 +153,25 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         //DESENHA
         gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
 
-        //---- EMPLILHA *** QUADRADO 2 (secundario)
+        //----- PONTEIRO 2 - AMARELO - (Minitos) ---------
         gl.glPushMatrix();
             //COR
             gl.glColor4f(1, 1,0, 1);
             //TRANSLACAO
-            gl.glTranslatef(0, 300, 0);
+            gl.glTranslatef(0, 0, 0);
             //ROTACAO
-            gl.glRotatef(angulo, 0,0,1);
+            gl.glRotatef(anguloMinuto, 0,0,1);
             //DESENHA
             gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
 
-                //---- EMPLILHA *** QUADRADO 3 (terceiro)
+                //----- PONTEIRO 3 - VERDE - (Segundos) ---------
                 gl.glPushMatrix();
                     //COR
                     gl.glColor4f(0, 1,0, 1);
                     //TRANSLACAO
-                    gl.glTranslatef(0, 300, 0);
+                    gl.glTranslatef(0, 0, 0);
                     //ROTACAO
-                    gl.glRotatef(angulo, 0,0,1);
+                    gl.glRotatef(anguloSegundo, 0,0,8);
                     //DESENHA
                     gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
 
@@ -171,15 +181,27 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         //DESENPILHA
         gl.glPopMatrix();
 
-        if (angulo > 10)
-            aumentandoAngulo = false;
-        else if (angulo < -10)
-            aumentandoAngulo = true;
+        anguloSegundo += -6;
 
-        if (aumentandoAngulo)
-            angulo+=0.3;
-        else
-            angulo-=0.3;
+        if (anguloSegundo == -360) {
+            deuUmMinuto = true;
+            anguloSegundo = 0;
+        }
+
+        if (deuUmMinuto) {
+            anguloMinuto += -6;
+            deuUmMinuto = false;
+        }
+
+        if (anguloMinuto == -360){
+            deuUmaHora = true;
+        }
+
+        if (deuUmaHora) {
+            anguloHora += -6;
+            anguloMinuto = 0;
+            deuUmaHora = false;
+        }
 
     }
 
