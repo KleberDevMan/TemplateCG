@@ -1,10 +1,14 @@
 package br.edu.catolica_to.templatecg;
 
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
+import android.opengl.GLUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -43,7 +47,13 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
 
     boolean aumentandoAngulo = false;
 
+    //variaveis usadas para usar textura
+    Activity vrActivity = null;
+    private int codTextura;
 
+    public Renderizador(Activity vrActivity) {
+        this.vrActivity = vrActivity;
+    }
 
     //objetos usados para realizar o arrasta e solta
     private Geometria objMove = null;
@@ -53,6 +63,7 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         gl.glClearColor(0.1f, 0, 0, 1);
+//        gl.glClearColor(0.181f,0.165f,0.66f, 1);
     }
 
     //É chamado quando a superfície de desenho for alterada.
@@ -72,6 +83,17 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         //volume (CUBO 3D) de renderização - Tudo que for configurado dentro desse volume aparece na tela.
         //Definindo X - Y - Z , LARGURA - ALTURA - PROFUNDIDADE
         gl.glOrthof(0.0f, largura, 0.0f, altura, -1.0f, 1.0f);
+
+        //HABILITA POSSIBILIDADE PARA ARRAY DE TEXTURA (TEXTURA)
+        gl.glEnable(GL10.GL_TEXTURE_2D);
+        gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
+        //HABILITA POSSIBILIDADE PARA ARRAY DE VERTICES (POLIGNO)
+        gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
+
+        gl.glEnable(GL10.GL_BLEND);
+        gl.glEnable(GL10.GL_ALPHA_TEST);
+        gl.glBlendFunc(GL10.GL_SRC_ALPHA, GL10.GL_ONE_MINUS_DST_ALPHA);
+
         //OPENGL aponta para nova matriz (De transformações geométricas)
         //Translação, Rotação e Escala
         //Matriz de câmera
@@ -81,22 +103,68 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
 
         //FIM --------------------------------------------------------------------------------------
 
-        //CRIA UM QUADRADO
+        // ----- CRIA TEXTURA ----------------------------------------------------------------
+        float[] vetCoordText = {
+                0, 1,
+                0, 0,
+                1, 1,
+                1, 0
+        };
+        FloatBuffer coordenadasTextura = criaNIOBuffer(vetCoordText);
+        //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+        gl.glTexCoordPointer(2,
+                GL10.GL_FLOAT,
+                0,
+                coordenadasTextura);
+        codTextura = carregaTextura(gl, R.mipmap.kleber);
+
+        // ----- CRIA POLIGNO ----------------------------------------------------------------
         qua = new Quadrado(gl);
         qua.setCor((float) random(), (float) random(), (float) random(), 1f);
         qua.setPosX(posX);
         qua.setPosY(posY);
-
-
         float[] co = new float[]{
-                -10, 150,
-                10, 150,
-                -10, 0,
-                10, 0
+                -100, -100,
+                -100, 100,
+                100, -100,
+                100, 100
         };
-
         buffer = criaNIOBuffer(co);
+    }
 
+    //METODO UTILIZADO PARA CARREGAR UMA TEXTURA
+    int carregaTextura(GL10 openGl, int codTextura) {
+
+        //CARREGA A IMAGEM NA MEMORIA RAM
+        Bitmap imagem = BitmapFactory
+                .decodeResource(vrActivity.getResources(), codTextura);
+
+        //DEFINE UM ARRAY PARA ARMAZ. DOS IDS DE TEXTURA
+        int[] idTextura = new int[1];
+
+        //GERA AS AREAS NA GPU E CRIA UM ID PARA CADA UMA
+        //***QUANTOS AREAS DE TEXTURAS, VETOR DA TEXTURA, DE QUAL POSICAO O ARRAY COMECA A SER LIDO***
+        openGl.glGenTextures(1, idTextura, 0);
+
+        //APONTA A MAQUINA OPENGL PARA UMAS DAS AREAS DE MEMORIAS CRIADAS NA GPU
+        openGl.glBindTexture(GL10.GL_TEXTURE_2D, idTextura[0]);
+
+        //COPIAR A IMAGEM DA RAM PARA A VRAM
+        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, imagem, 0);
+
+        //CONFIGURANDO A MUDANÇA DE PROPORÇÃO DA IMAGEM ( MINIMIZAR )
+        openGl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_NEAREST);
+
+        //CONFIGURANDO A MUDANÇA DE PROPORÇÃO DA IMAGEM ( MAXIMIZAR )
+        openGl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_NEAREST);
+
+        //APONTA A VRAM OPENGL PARA O NADA
+        openGl.glBindTexture(GL10.GL_TEXTURE_2D, 0);
+
+        //DELETA A IMAGEM CARREGADA NA RAM
+        imagem.recycle();
+
+        return idTextura[0];
     }
 
     public static FloatBuffer criaNIOBuffer(float[] coordenadas) {
@@ -123,85 +191,25 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         return buffer;
     }
 
-
-    boolean deuUmMinuto = false;
-    boolean deuUmaHora = false;
-
-    float anguloSegundo = 0;
-    float anguloMinuto = 0;
-    float anguloHora = 0;
-
-
     @Override
     public void onDrawFrame(GL10 gl) {
 
-        gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
         //limpa o vetor de cores
         gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
         //carrega a matriz identidade
         gl.glLoadIdentity();
 
-        //----- PONTEIRO 1 - VERMELHO - (Hora) ---------
+        //----- DESENHANDO QUADRADO ---------
         //TRANSLACAO
-        gl.glTranslatef((larguraX/2)+10, alturaY/2, 0);
+        gl.glTranslatef(posX, posY, 0);
         //ROTACAO
-        gl.glRotatef(anguloHora, 0,0,1);
-        //COR
-        gl.glColor4f(1, 0, 0, 1);
+        gl.glRotatef(angulo, 0,0,1);
+        //TEXTURA
+        gl.glBindTexture(GL10.GL_TEXTURE_2D, codTextura);
         //CORDENADAS
         gl.glVertexPointer(2, GL10.GL_FLOAT, 0, buffer);
         //DESENHA
         gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
-
-        //----- PONTEIRO 2 - AMARELO - (Minitos) ---------
-        gl.glPushMatrix();
-            //COR
-            gl.glColor4f(1, 1,0, 1);
-            //TRANSLACAO
-            gl.glTranslatef(0, 0, 0);
-            //ROTACAO
-            gl.glRotatef(anguloMinuto, 0,0,1);
-            //DESENHA
-            gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
-
-                //----- PONTEIRO 3 - VERDE - (Segundos) ---------
-                gl.glPushMatrix();
-                    //COR
-                    gl.glColor4f(0, 1,0, 1);
-                    //TRANSLACAO
-                    gl.glTranslatef(0, 0, 0);
-                    //ROTACAO
-                    gl.glRotatef(anguloSegundo, 0,0,8);
-                    //DESENHA
-                    gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4);
-
-                //DESENPILHA
-                gl.glPopMatrix();
-
-        //DESENPILHA
-        gl.glPopMatrix();
-
-        anguloSegundo += -6;
-
-        if (anguloSegundo == -360) {
-            deuUmMinuto = true;
-            anguloSegundo = 0;
-        }
-
-        if (deuUmMinuto) {
-            anguloMinuto += -6;
-            deuUmMinuto = false;
-        }
-
-        if (anguloMinuto == -360){
-            deuUmaHora = true;
-        }
-
-        if (deuUmaHora) {
-            anguloHora += -6;
-            anguloMinuto = 0;
-            deuUmaHora = false;
-        }
 
     }
 

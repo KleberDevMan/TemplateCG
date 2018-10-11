@@ -1,5 +1,6 @@
 package br.edu.catolica_to.templatecg;
 
+import android.app.Activity;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -8,7 +9,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends Activity implements SensorEventListener {
 
     GLSurfaceView superficieDesenho = null;
     Renderizador render = null;
@@ -29,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         superficieDesenho = new GLSurfaceView(this);
 
         //Valida a var de referencia para o renderizador
-        render = new Renderizador();
+        render = new Renderizador(this);
 
         //Associa o renderizador a superficie de desenho da tela.
         superficieDesenho.setRenderer(render);
