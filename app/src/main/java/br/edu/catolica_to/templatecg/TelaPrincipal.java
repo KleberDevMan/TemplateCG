@@ -87,6 +87,7 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         //HABILITA POSSIBILIDADE PARA ARRAY DE TEXTURA (TEXTURA)
         gl.glEnable(GL10.GL_TEXTURE_2D);
         gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
+
         //HABILITA POSSIBILIDADE PARA ARRAY DE VERTICES (POLIGNO)
         gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
 
@@ -105,10 +106,10 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
 
         // ----- CRIA TEXTURA ----------------------------------------------------------------
         float[] vetCoordText = {
-                0, 1,
-                0, 0,
-                1, 1,
-                1, 0
+                1f, 1f,
+                1, 0,
+                0f, 1f,
+                0f, 0
         };
         FloatBuffer coordenadasTextura = criaNIOBuffer(vetCoordText);
         //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
@@ -116,7 +117,7 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
                 GL10.GL_FLOAT,
                 0,
                 coordenadasTextura);
-        codTextura = carregaTextura(gl, R.mipmap.kleber);
+        codTextura = carregaTextura(gl, R.mipmap.pantera);
 
         // ----- CRIA POLIGNO ----------------------------------------------------------------
         qua = new Quadrado(gl);
@@ -167,6 +168,194 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         return idTextura[0];
     }
 
+    //METODO USADO PARA ME DEVOLVER UMA DAS COORDENADAS DA TEXTURA
+    void mudarIndiceDaTextura(int indice, boolean inverte) {
+
+        float[] indice0 = null;
+        float[] indice1 = null;
+        float[] indice2 = null;
+        float[] indice3 = null;
+        float[] indice4 = null;
+        float[] indice5 = null;
+        float[] indice6 = null;
+        float[] indice7 = null;
+
+        if (!inverte){
+            indice0 = new float[]{
+                    0f, 0.25f,
+                    0, 0,
+                    0.5f, 0.25f,
+                    0.5f, 0
+            };
+            indice1 = new float[]{
+                    0.5f, 0.25f,
+                    0.5f, 0,
+                    1, 0.25f,
+                    1, 0
+            };
+            indice2 = new float[]{
+                    0f, 0.5f,
+                    0, 0.25f,
+                    0.5f, 0.5f,
+                    0.5f, 0.25f
+            };
+            indice3 = new float[]{
+                    0.5f, 0.5f,
+                    0.5f, 0.25f,
+                    1, 0.5f,
+                    1, 0.25f
+            };
+            indice4 = new float[]{
+                    0f, 0.75f,
+                    0, 0.5f,
+                    0.5f, 0.75f,
+                    0.5f, 0.5f
+            };
+            indice5 = new float[]{
+                    0.5f, 0.75f,
+                    0.5f, 0.5f,
+                    1, 0.75f,
+                    1, 0.5f
+            };
+            indice6 = new float[]{
+                    0, 1,
+                    0, 0.75f,
+                    0.5f, 1,
+                    0.5f, 0.75f
+            };
+            indice7 = new float[]{
+                    0.5f, 1,
+                    0.5f, 0.75f,
+                    1, 1,
+                    1, 0.75f
+            };
+        }
+        else{
+            indice0 = new float[]{
+                    1f, 0.25f,
+                    1, 0,
+                    0.5f, 0.25f,
+                    0.5f, 0
+            };
+            indice1 = new float[]{
+                    0.5f, 0.25f,
+                    0.5f, 0,
+                    0, 0.25f,
+                    0, 0
+            };
+            indice2 = new float[]{
+                    1f, 0.5f,
+                    1, 0.25f,
+                    0.5f, 0.5f,
+                    0.5f, 0.25f
+            };
+            indice3 = new float[]{
+                    0.5f, 0.5f,
+                    0.5f, 0.25f,
+                    0, 0.5f,
+                    0, 0.25f
+            };
+            indice4 = new float[]{
+                    1f, 0.75f,
+                    1, 0.5f,
+                    0.5f, 0.75f,
+                    0.5f, 0.5f
+            };
+            indice5 = new float[]{
+                    0.5f, 0.75f,
+                    0.5f, 0.5f,
+                    0, 0.75f,
+                    1, 0.5f
+            };
+            indice6 = new float[]{
+                    1, 1,
+                    1, 0.75f,
+                    0.5f, 1,
+                    0.5f, 0.75f
+            };
+            indice7 = new float[]{
+                    0.5f, 1,
+                    0.5f, 0.75f,
+                    0, 1,
+                    0, 0.75f
+            };
+        }
+
+
+        List<FloatBuffer> buffers = new ArrayList<>();
+
+        buffers.add(criaNIOBuffer(indice0));
+        buffers.add(criaNIOBuffer(indice1));
+        buffers.add(criaNIOBuffer(indice2));
+        buffers.add(criaNIOBuffer(indice3));
+        buffers.add(criaNIOBuffer(indice4));
+        buffers.add(criaNIOBuffer(indice5));
+        buffers.add(criaNIOBuffer(indice6));
+        buffers.add(criaNIOBuffer(indice7));
+
+        switch (indice) {
+            case 0:
+                //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+                gl.glTexCoordPointer(2,
+                        GL10.GL_FLOAT,
+                        0,
+                        buffers.get(0));
+                break;
+            case 1:
+                //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+                gl.glTexCoordPointer(2,
+                        GL10.GL_FLOAT,
+                        0,
+                        buffers.get(1));
+                break;
+            case 2:
+                //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+                gl.glTexCoordPointer(2,
+                        GL10.GL_FLOAT,
+                        0,
+                        buffers.get(2));
+                break;
+            case 3:
+                //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+                gl.glTexCoordPointer(2,
+                        GL10.GL_FLOAT,
+                        0,
+                        buffers.get(3));
+                break;
+            case 4:
+                //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+                gl.glTexCoordPointer(2,
+                        GL10.GL_FLOAT,
+                        0,
+                        buffers.get(4));
+                break;
+            case 5:
+                //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+                gl.glTexCoordPointer(2,
+                        GL10.GL_FLOAT,
+                        0,
+                        buffers.get(5));
+                break;
+            case 6:
+                //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+                gl.glTexCoordPointer(2,
+                        GL10.GL_FLOAT,
+                        0,
+                        buffers.get(6));
+                break;
+            case 7:
+                //REGISTRA AS COORDENADAS DA TEXTURA NA MAQUINA
+                gl.glTexCoordPointer(2,
+                        GL10.GL_FLOAT,
+                        0,
+                        buffers.get(7));
+                break;
+            default:
+                break;
+        }
+
+    }
+
     public static FloatBuffer criaNIOBuffer(float[] coordenadas) {
         //Aloca a qtd de bytes necessárias para armazenar os dados dos vertices
         ByteBuffer vetBytes = ByteBuffer.allocateDirect(coordenadas.length * 4);
@@ -191,6 +380,12 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         return buffer;
     }
 
+    long inicio = System.currentTimeMillis();
+    int indiceDaTextura = 0;
+    int direcao = 1;
+
+    boolean inverte = false;
+
     @Override
     public void onDrawFrame(GL10 gl) {
 
@@ -203,7 +398,7 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         //TRANSLACAO
         gl.glTranslatef(posX, posY, 0);
         //ROTACAO
-        gl.glRotatef(angulo, 0,0,1);
+        gl.glRotatef(angulo, 0, 0, 1);
         //TEXTURA
         gl.glBindTexture(GL10.GL_TEXTURE_2D, codTextura);
         //CORDENADAS
@@ -211,6 +406,30 @@ class Renderizador implements GLSurfaceView.Renderer, View.OnTouchListener {
         //DESENHA
         gl.glDrawArrays(GL10.GL_TRIANGLE_STRIP, 0, 4);
 
+        if (System.currentTimeMillis() - inicio > 100) {
+            if (indiceDaTextura == 7) {
+                indiceDaTextura = 0;
+            }
+
+            mudarIndiceDaTextura(indiceDaTextura, inverte);
+            indiceDaTextura++;
+
+            inicio = System.currentTimeMillis();
+        }
+
+        //AUMENTA A TRANSLACAO
+        posX += direcao * 5;
+
+        //MUDA A DIRACAO DA TRANSLACAO X
+        if (posX + 100 >= larguraX ){
+            direcao *= -1;
+            inverte = true;
+        }
+        //MUDA A DIRACAO DA TRANSLACAO X
+        if (posX <= 100){
+            direcao *= -1;
+            inverte = false;
+        }
     }
 
     //PEGA O OBJ DE LOCALIZADO EM UM LUGAR NA TELA
